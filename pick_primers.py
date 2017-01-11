@@ -243,7 +243,7 @@ def get_primer_lengths(primers_in):
 
 def main(config_file, gene, target_ids, directory, upper, lower):
     """test for dependencies"""
-    dependencies = ['primer3_core','blastall','formatdb']
+    dependencies = ['primer3_core','blastall','makeblastdb']
     for dependency in dependencies:
         ra = subprocess.call(['which', '%s' % dependency])
         if ra == 0:
@@ -281,10 +281,12 @@ def main(config_file, gene, target_ids, directory, upper, lower):
             os.system("makeblastdb -in non_target_database.seqs -dbtype nucl > /dev/null 2>&1")
             primer_names = derep_primers("all_primers.fasta", "reduced_primers.fasta")
             primer_dict = get_primer_lengths("reduced_primers.fasta")
-            os.system("blastall -p blastn -i reduced_primers.fasta -d target_database.seqs -b 2000 -v 2000 -e 10 -m 8 -o target_blast.out")
+            #os.system("blastall -p blastn -i reduced_primers.fasta -d target_database.seqs -b 2000 -v 2000 -e 10 -m 8 -o target_blast.out")
+            os.system("blastn -task blastn -query reduced_primers.fasta -db target_database.seqs -num_alignments 2000 -outfmt 6 -out target_blast.out -evalue 10")
             """check this function"""
             parse_blast_report("target_blast.out", num_targets, primer_dict)
-            os.system("blastall -p blastn -i reduced_primers.fasta -d non_target_database.seqs -b 2000 -v 2000 -e 10 -m 8 -o non_target_blast.out")
+            #os.system("blastall -p blastn -i reduced_primers.fasta -d non_target_database.seqs -b 2000 -v 2000 -e 10 -m 8 -o non_target_blast.out")
+            os.system("blastn -task blastn -query reduced_primers.fasta -db non_target_database.seqs -num_alignments 2000 -outfmt 6 -out non_target_blast.out -evalue 10")
             parse_non_target_blast("non_target_blast.out", primer_names)
             report_results("target_hit_results.txt", "non_target_hit_results.txt", primer_names, gene_name)
             os.system("cp reduced_primers.fasta %s_primers.seqs" % gene_name)
