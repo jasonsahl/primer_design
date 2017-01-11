@@ -243,7 +243,7 @@ def get_primer_lengths(primers_in):
 
 def main(config_file, gene, target_ids, directory, upper, lower):
     """test for dependencies"""
-    dependencies = ['primer3_core','blastall','makeblastdb']
+    dependencies = ['primer3_core','blastn','makeblastdb']
     for dependency in dependencies:
         ra = subprocess.call(['which', '%s' % dependency])
         if ra == 0:
@@ -290,7 +290,7 @@ def main(config_file, gene, target_ids, directory, upper, lower):
             parse_non_target_blast("non_target_blast.out", primer_names)
             report_results("target_hit_results.txt", "non_target_hit_results.txt", primer_names, gene_name)
             os.system("cp reduced_primers.fasta %s_primers.seqs" % gene_name)
-            os.system("rm reduced_primers.fasta target_blast.out target_hit_results.txt non_target_blast.out non_target_hit_results.txt all_primers.fasta *.for *.rev config_modified.txt")
+            #os.system("rm reduced_primers.fasta target_blast.out target_hit_results.txt non_target_blast.out non_target_hit_results.txt all_primers.fasta *.for *.rev config_modified.txt")
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
