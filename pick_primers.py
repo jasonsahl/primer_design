@@ -242,28 +242,34 @@ def report_results(target,non_target,primer_names,gene_name):
     non_target_results_dict={}
     results = {}
     non_target_totals={}
+    #for primer_name in primer_names:
+        #Each primer should be in the target_dict
+    #    if primer_name in target_dict:
+    #        target_results_dict.update({primer_name:sorted_targets.index(primer_name)})
+    #        print(primer_name,)
+            #results.update({primer_name:int(target_results_dict.get(primer_name))+int(non_target_results_dict.get(primer_name))})
+    #    else:
+    #        """If primer isn't in this dict, we need to ignore it entirely"""
+    #        pass
+    outfile.write("#Primer_ID\ttarget_mishits\tnon_target_hits\n")
     for primer_name in primer_names:
-        if primer_name in target_dict:
-            target_results_dict.update({primer_name:sorted_targets.index(primer_name)})
-	else:
-        """If primer isn't in this dict, we need to ignore it entirely"""
-	    pass
-	if primer_name in non_target_dict and primer_name in target_dict:
-        non_target_results_dict.update({primer_name:sorted_non_targets.index(primer_name)})
-        non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int(non_target_dict.get(primer_name))})
-	elif primer_name in target_dict and primer_name not in non_target_dict:
-	    non_target_results_dict.update({primer_name:"0"})
-            non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int("0")})
-	else:
-	    pass
-    for primer_name in primer_names:
-        if primer_name in target_dict:
-            results.update({primer_name:int(target_results_dict.get(primer_name))+int(non_target_results_dict.get(primer_name))})
-	else:
-	    pass
-    sorted_results = [(key, str(val)) for val, key in sorted((int(val), key) for key, val in results.iteritems())]
-    for result in sorted_results:
-        print("\t".join(result)+"\t"+str(non_target_totals.get(result[0])),file=outfile)
+        if primer_name in non_target_dict and primer_name in target_dict:
+            non_target_results_dict.update({primer_name:sorted_non_targets.index(primer_name)})
+            outfile.write(str(primer_name)+"\t"+str(target_dict.get(primer_name))+"\t"+str(non_target_dict.get(primer_name))+"\n")
+            #non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int(non_target_dict.get(primer_name))})
+        elif primer_name in target_dict and primer_name not in non_target_dict:
+            non_target_results_dict.update({primer_name:"0"})
+            outfile.write(str(primer_name)+"\t"+str(target_dict.get(primer_name))+"\t"+"0"+"\n")
+    outfile.close()
+            #non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int("0")})
+    #for primer_name in primer_names:
+    #    if primer_name in target_dict:
+    #        results.update({primer_name:int(target_results_dict.get(primer_name))+int(non_target_results_dict.get(primer_name))})
+	#else:
+	#    pass
+    #sorted_results = [(key, str(val)) for val, key in sorted((int(val), key) for key, val in results.iteritems())]
+    #for result in sorted_results:
+    #    print("\t".join(result)+"\t"+str(non_target_totals.get(result[0])),file=outfile)
 
 def get_gene_name(gene_path):
     for record in SeqIO.parse(open(gene_path, "U"), "fasta"):
@@ -328,7 +334,7 @@ def main(config_file, gene, target_ids, directory, upper, lower):
             parse_non_target_blast("non_target_blast.out", primer_names)
             report_results("target_hit_results.txt", "non_target_hit_results.txt", primer_names, gene_name)
             os.system("cp reduced_primers.fasta %s_primers.seqs" % gene_name)
-            #os.system("rm reduced_primers.fasta target_blast.out target_hit_results.txt non_target_blast.out non_target_hit_results.txt all_primers.fasta *.for *.rev config_modified.txt")
+            os.system("rm reduced_primers.fasta target_blast.out target_hit_results.txt non_target_blast.out non_target_hit_results.txt all_primers.fasta *.for *.rev config_modified.txt")
 
 if __name__ == "__main__":
     usage="usage: %prog [options]"
