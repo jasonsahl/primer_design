@@ -124,50 +124,80 @@ def create_separate_databases(combined_in, target_ids):
     output2_handle.close()
     return num_targets
 
-def parse_blast_report(infile, num_targets, primer_dict):
+def parse_blast_report(infile,num_targets,primer_dict):
     my_dict = {}
     outfile = open("target_hit_results.txt", "w")
+    outfile.write("#primer_name\tmax_align_len\tnext_align_len\n")
+    """target hit_results includes primer name"""
+    valids = []
     for line in open(infile, "U"):
         fields = line.split()
         """Checks that all primers match 100 percent and also are the same length as the alignment"""
         if fields:
-            if int(primer_dict.get(fields[0])) == int(fields[3]) and float(fields[2]) == 100:
+            """fields[3] is the length of the alignment"""
+            #if int(primer_dict.get(fields[0])) == int(fields[3]) and float(fields[2]) == 100:
+            """if there is no exact match, skip entirely"""
+            if int(primer_dict.get(fields[0])) == int(fields[3]):
+                """now, report all matches with an alignment ID of 100"""
+                valids.append(1)
+        else:
+            print("no valid blast hits found")
+    if len(valids)>=1:
+        for line in open(infile, "U"):
+            fields = line.split()
+            if float(fields[2]) == 100:
                 try:
                     my_dict[fields[0]].append(fields[3])
                 except KeyError:
                     my_dict[fields[0]]=[fields[3]]
-    	else:
-    	    print("no hits found")
+        	else:
+        	   pass
+    """my_dict includes each primer and the lenghts of all primer alignment lengths"""
     for k,v in my_dict.iteritems():
+        """This sorts the hits in descending order, should already be that way"""
         my_values = sorted(v, key=int, reverse=True)
         try:
             counter=collections.Counter(my_values[0:num_targets])
         except:
 	        print(k,my_values[0],"0",file=outfile)
         values=counter.values()
-        """this makes sure that all hits have the same alignment length
-        should now be redundant, but shouldn't hurt anything?"""
-        if len(my_values)==num_targets:
-            print(k,my_values[0],my_values[num_targets-1],file=outfile)
-        elif len(my_values)>num_targets:
-	        print(k,my_values[0],my_values[num_targets],file=outfile)
-        else:
-	        pass
+        """for good primer, values should equal the number of targets"""
+        #if len(my_values)==num_targets:
+        #print("".join(values),num_targets)
+        #if num_targets in values:
+        """I need to check that all targets are hit"""
+        if int(num_targets) in values:
+            #print("true")
+            if len(my_values)>num_targets:
+                """this will print out primer name, alignment length, next longest alignment length"""
+                print(k,my_values[0],my_values[num_targets],file=outfile)
+            elif len(my_values)==num_targets:
+    	        print(k,my_values[0],"0",file=outfile)
+        #else:
+	    #    pass
     outfile.close()
 
 def parse_non_target_blast(infile, primer_names):
     my_dict = {}
     outfile = open("non_target_hit_results.txt", "w")
+    outfile.write("#primer_name\tmax_align_len\n")
     for line in open(infile, "U"):
         fields = line.split()
-        try:
-            my_dict[fields[0]].append(fields[3])
-        except KeyError:
-            my_dict[fields[0]]=[fields[3]]
+        """These primer lengths need to have an ID of >95, they should
+        be sorted from high to low, in terms of bit score"""
+        if float(fields[2])>95:
+            #print(fields[2])
+            try:
+                my_dict[fields[0]].append(fields[3])
+            except KeyError:
+                my_dict[fields[0]]=[fields[3]]
+        else:
+            pass
     for primer_name in primer_names:
         if primer_name in my_dict:
             pass
         else:
+            """if there is no blast hit, it will be assigned a value of 0"""
             my_dict.update({primer_name:"0"})
     for k,v in my_dict.iteritems():
         my_values = sorted(v, key=int, reverse=True)
@@ -188,16 +218,24 @@ def derep_primers(infile, outfile):
     outfile.close()
     return record_ids
 
-def report_results(target, non_target, primer_names, gene_name):
+def report_results(target,non_target,primer_names,gene_name):
     target_dict = {}
     non_target_dict = {}
     outfile = open("%s_results.txt" % gene_name, "w")
     for line in open(target, "U"):
-        fields = line.split()
-        target_dict.update({fields[0]:fields[2]})
+        if line.startswith("#"):
+            pass
+        else:
+            fields = line.split()
+            """This will include name and length of next best primer alignment length"""
+            target_dict.update({fields[0]:fields[2]})
     for line in open(non_target, "U"):
-        fields = line.split()
-        non_target_dict.update({fields[0]:fields[1]})
+        if line.startswith("#"):
+            pass
+        else:
+            fields = line.split()
+            """This will include name and lenght of best alignment length in non targets"""
+            non_target_dict.update({fields[0]:fields[1]})
     sorted_targets = list(sorted(target_dict, key=target_dict.__getitem__))
     sorted_non_targets = list(sorted(non_target_dict, key=non_target_dict.__getitem__))
     target_results_dict={}
@@ -206,12 +244,13 @@ def report_results(target, non_target, primer_names, gene_name):
     non_target_totals={}
     for primer_name in primer_names:
         if primer_name in target_dict:
-	    target_results_dict.update({primer_name:sorted_targets.index(primer_name)})
+            target_results_dict.update({primer_name:sorted_targets.index(primer_name)})
 	else:
+        """If primer isn't in this dict, we need to ignore it entirely"""
 	    pass
 	if primer_name in non_target_dict and primer_name in target_dict:
-            non_target_results_dict.update({primer_name:sorted_non_targets.index(primer_name)})
-            non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int(non_target_dict.get(primer_name))})
+        non_target_results_dict.update({primer_name:sorted_non_targets.index(primer_name)})
+        non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int(non_target_dict.get(primer_name))})
 	elif primer_name in target_dict and primer_name not in non_target_dict:
 	    non_target_results_dict.update({primer_name:"0"})
             non_target_totals.update({primer_name:int(target_dict.get(primer_name))+int("0")})
@@ -281,12 +320,11 @@ def main(config_file, gene, target_ids, directory, upper, lower):
             os.system("makeblastdb -in non_target_database.seqs -dbtype nucl > /dev/null 2>&1")
             primer_names = derep_primers("all_primers.fasta", "reduced_primers.fasta")
             primer_dict = get_primer_lengths("reduced_primers.fasta")
-            #os.system("blastall -p blastn -i reduced_primers.fasta -d target_database.seqs -b 2000 -v 2000 -e 10 -m 8 -o target_blast.out")
             os.system("blastn -task blastn -query reduced_primers.fasta -db target_database.seqs -num_alignments 2000 -outfmt 6 -out target_blast.out -evalue 10")
-            """check this function"""
+            """Num-targets is clear, primer_dict includes the primer name and length"""
             parse_blast_report("target_blast.out", num_targets, primer_dict)
-            #os.system("blastall -p blastn -i reduced_primers.fasta -d non_target_database.seqs -b 2000 -v 2000 -e 10 -m 8 -o non_target_blast.out")
             os.system("blastn -task blastn -query reduced_primers.fasta -db non_target_database.seqs -num_alignments 2000 -outfmt 6 -out non_target_blast.out -evalue 10")
+            """need to test this function"""
             parse_non_target_blast("non_target_blast.out", primer_names)
             report_results("target_hit_results.txt", "non_target_hit_results.txt", primer_names, gene_name)
             os.system("cp reduced_primers.fasta %s_primers.seqs" % gene_name)

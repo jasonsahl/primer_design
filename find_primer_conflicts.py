@@ -24,14 +24,14 @@ def parse_blast_file(blast_in,aln_length):
         fields = newline.split()
         if int(fields[3])>int(aln_length) and int(fields[5])==0:
             try:
-                blast_dict[fields[0]].append("1")
+                blast_dict[fields[0]].append(fields[1])
             except KeyError:
-                blast_dict[fields[0]] = ["1"]
+                blast_dict[fields[0]] = [fields[1]]
     print("Problematic primers with an alignment length of %s, number of bad alignments" % aln_length)
     for k,v in blast_dict.iteritems():
         if len(v)>1:
-            print(k,len(v)-1)
-
+            #print(k,len(v)-1)
+            print(k,"\t".join(v))
 def main(primer_fasta,aln_length):
     dependencies = ['blastn','makeblastdb']
     for dependency in dependencies:
